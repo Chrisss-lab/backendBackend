@@ -32,11 +32,15 @@ Your **Desktop\Backend BackUps** folder stays a separate, optional archive for o
 ## 2. API on Render
 
 - **Root directory:** repository root (monorepo).
-- **Build command** (example):
+- **Build command** (no DB needed at build time):
 
-  `npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run build -w apps/api`
+  `npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npm run build -w apps/api`
 
-- **Start command:** `node apps/api/dist/main.js`
+- **Start command** (runs migrations, then API — **requires `DATABASE_URL`** at runtime):
+
+  `npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/main.js`
+
+- **PostgreSQL:** Create a Render **PostgreSQL** instance, then in the Web Service → **Environment** add **`DATABASE_URL`** (use **Internal Database URL** when API and DB are in the same region). Redeploy after adding it. Without this, the **build** can still succeed, but the service will **fail on start** when migrations run.
 
 - **Environment variables:**
 

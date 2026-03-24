@@ -5,8 +5,9 @@ services:
     name: hub-api
     runtime: node
     rootDir: .
-    buildCommand: npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run build -w apps/api
-    startCommand: node apps/api/dist/main.js
+    # migrate runs at start so build does not require DATABASE_URL (set DB + link env before first boot).
+    buildCommand: npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npm run build -w apps/api
+    startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
