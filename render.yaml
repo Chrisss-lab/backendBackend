@@ -1,0 +1,25 @@
+# Render Blueprint (optional): Web Service + PostgreSQL
+# Adjust repo URL and branch in the Render dashboard when you connect Git.
+services:
+  - type: web
+    name: hub-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run build -w apps/api
+    startCommand: node apps/api/dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hub-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # R2 (set in dashboard; do not commit secrets):
+      # R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, STORAGE_PUBLIC_BASE_URL
+
+databases:
+  - name: hub-postgres
+    databaseName: hub
+    user: hub
