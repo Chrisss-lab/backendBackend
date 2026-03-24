@@ -70,17 +70,30 @@ Invoice rows will store **full `https://...` URLs** when R2 is enabled; the web 
 ## 4. Frontend on Cloudflare Pages
 
 - **Framework preset:** Next.js (static) or **None** with custom settings.  
+- **Root directory:** `/` (repo root — required for npm workspaces).
+
 - **Build command** (from repo root):
 
   `npm ci && npm run build:web` (skips the API; Pages only needs the static export)
 
-- **Build output directory:** `apps/web/out`  
+- **Build output directory:** `apps/web/out`
 
-- **Environment variable (Pages):**
+- **Deploy command** (if Cloudflare requires one — do **not** use `npx wrangler deploy`; that targets Workers and errors on monorepo roots):
 
-  `NEXT_PUBLIC_API_URL=https://your-service.onrender.com`
+  `npm run deploy:cf-pages`
 
-No trailing slash. After deploy, the SPA calls your Render API for JSON and uses returned invoice/receipt URLs (R2 or API `/uploads/...`).
+- **Environment variables (Pages):**
+
+  | Variable | Example / purpose |
+  |----------|-------------------|
+  | `NEXT_PUBLIC_API_URL` | `https://your-api.onrender.com` (no trailing slash) |
+  | `PAGES_PROJECT_NAME` | Exact **Pages project name** from the dashboard (often matches the subdomain before `.pages.dev`) |
+
+  Without `PAGES_PROJECT_NAME`, `deploy:cf-pages` exits with an error so the log tells you what to set.
+
+No trailing slash on the API URL. After deploy, the SPA calls your Render API for JSON and uses returned invoice/receipt URLs (R2 or API `/uploads/...`).
+
+**Optional single-step build + upload:** `npm ci && npm run build:web && npm run deploy:cf-pages` — then set **Deploy command** to `true` or leave empty if the UI allows it, to avoid uploading twice.
 
 ## 5. Local development
 

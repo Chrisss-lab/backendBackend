@@ -9,6 +9,7 @@
     "dev": "powershell -Command \"Start-Process npm -ArgumentList 'run dev:api'; npm run dev:web\"",
     "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
     "build:web": "npm run build -w packages/shared && npm run build -w apps/web",
+    "deploy:cf-pages": "sh -c 'if [ -z \"$PAGES_PROJECT_NAME\" ]; then echo \"Set PAGES_PROJECT_NAME in Cloudflare (your Pages project name, same as *.pages.dev slug).\"; exit 1; fi; exec npx wrangler pages deploy apps/web/out --project-name=\"$PAGES_PROJECT_NAME\"'",
     "start": "npm run start:local",
     "ensure:data": "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run prisma:seed -w apps/api && npm run prisma:import:recipes -w apps/api"
   },
