@@ -37,9 +37,15 @@ Your **Desktop\Backend BackUps** folder stays a separate, optional archive for o
 
   `npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npm run build -w apps/api`
 
-- **Start command** (runs migrations, then API — **requires `DATABASE_URL`** at runtime):
+- **Start command** (migrations run **inside** `apps/api` so Prisma finds `prisma/` correctly):
 
-  `npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/main.js`
+  `npm run render:start`
+
+  (Equivalent: `npm run prisma:migrate:deploy -w apps/api && node apps/api/dist/main.js`.)
+
+- **If migrations fail with TLS / connection errors:** append **`?sslmode=require`** to `DATABASE_URL` (if the URL already has `?`, use **`&sslmode=require`**). Use Render’s **External** URL when testing from outside Render; **Internal** URL is fine for the Web Service in the same region.
+
+- **Special characters in the DB password** must be **URL-encoded** inside `DATABASE_URL` (e.g. `@` → `%40`). If in doubt, re-copy the URL from the Render Postgres dashboard.
 
 - **PostgreSQL:** Create a Render **PostgreSQL** instance, then in the Web Service → **Environment** add **`DATABASE_URL`** (use **Internal Database URL** when API and DB are in the same region). Redeploy after adding it. Without this, the **build** can still succeed, but the service will **fail on start** when migrations run.
 
