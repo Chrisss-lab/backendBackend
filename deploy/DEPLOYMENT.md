@@ -72,7 +72,7 @@ Invoice rows will store **full `https://...` URLs** when R2 is enabled; the web 
 - **Framework preset:** Next.js (static) or **None** with custom settings.  
 - **Build command** (from repo root):
 
-  `npm ci && npm run build -w packages/shared && npm run build -w apps/web`
+  `npm ci && npm run build:web` (skips the API; Pages only needs the static export)
 
 - **Build output directory:** `apps/web/out`  
 
