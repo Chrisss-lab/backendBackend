@@ -49,6 +49,39 @@ Your **Desktop\Backend BackUps** folder stays a separate, optional archive for o
 
 - **PostgreSQL:** Create a Render **PostgreSQL** instance, then in the Web Service → **Environment** add **`DATABASE_URL`** (use **Internal Database URL** when API and DB are in the same region). Redeploy after adding it. Without this, the **build** can still succeed, but the service will **fail on start** when migrations run.
 
+### Prisma **P3009** (“failed migrations … `20260324120000_init` failed”)
+
+That means a **previous** `migrate deploy` was recorded as **failed**. Prisma will not run new migrations until you fix it.
+
+**If this database has no production data you need** (typical for a new Render DB):
+
+1. Open your **PostgreSQL** in Render → **Connect** → use **Shell** or **External** URL with `psql`.
+2. Run (replace `jrbackend_db_user` with your DB user if different):
+
+   ```sql
+   DROP SCHEMA public CASCADE;
+   CREATE SCHEMA public;
+   GRANT ALL ON SCHEMA public TO jrbackend_db_user;
+   GRANT ALL ON SCHEMA public TO public;
+   ```
+
+3. Redeploy the **Web Service** so `npm run render:start` runs a clean `migrate deploy`.
+
+**Alternative (from your laptop, External `DATABASE_URL`):**
+
+```bash
+cd apps/api
+set DATABASE_URL=postgresql://...external...
+npx prisma migrate resolve --rolled-back 20260324120000_init
+npx prisma migrate deploy
+```
+
+If `migrate deploy` then errors with **relation already exists**, use the **DROP SCHEMA** SQL above and redeploy.
+
+**One-shot from repo root (same External URL in env):**
+
+`npm run prisma:migrate:resolve-init-rolled-back -w apps/api` then redeploy; if tables were half-created, still use **DROP SCHEMA** or fix objects manually.
+
 - **Environment variables:**
 
   - `DATABASE_URL` — Postgres connection string  
