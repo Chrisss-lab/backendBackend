@@ -17,6 +17,9 @@
   "author": "",
   "license": "ISC",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

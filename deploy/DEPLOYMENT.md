@@ -31,6 +31,7 @@ Your **Desktop\Backend BackUps** folder stays a separate, optional archive for o
 
 ## 2. API on Render
 
+- **Node version:** Repo includes `.node-version` (`20`) to avoid occasional **npm `ci` segmentation faults** on Node 22. You can also set **`NODE_VERSION=20`** under the Web Service **Environment** if the build still picks 22.
 - **Root directory:** repository root (monorepo).
 - **Build command** (no DB needed at build time):
 
