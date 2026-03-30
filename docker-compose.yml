@@ -1,0 +1,17 @@
+# Optional local PostgreSQL (legacy). Default hub dev uses embedded SQLite — omit DATABASE_URL or use file:./data/hub.db.
+# Start: docker compose up -d
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hub?schema=public
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hub
+    volumes:
+      - hub_pgdata:/var/lib/postgresql/data
+
+volumes:
+  hub_pgdata:

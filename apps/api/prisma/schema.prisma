@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  FULFILLED
+  CANCELLED
+}
+
+enum PromoKind {
+  COUPON
+  COOP
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+}
+
+model SyncEvent {
+  id           String   @id @default(cuid())
+  sourceSystem String
+  eventType    String
+  externalId   String
+  payload      Json
+  occurredAt   DateTime
+  lastSyncedAt DateTime
+  createdAt    DateTime @default(now())
+
+  @@unique([sourceSystem, externalId, eventType])
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  externalId String?  @unique
+  name       String
+  email      String?
+  phone      String?
+  createdAt  DateTime @default(now())
+  orders     Order[]
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  foodType     String   @default("Adult")
+  costPerPound Decimal
+  salePrice    Decimal
+  chargeUnit   String   @default("lb")
+  amountPerUnit Decimal @default(1)
+  isBundle     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  ingredients  RecipeIngredient[]
+  bundleItems  RecipeBundleItem[] @relation("ParentRecipeItems")
+  usedInBundles RecipeBundleItem[] @relation("ChildRecipeItems")
+  orders       Order[]
+}
+
+model Ingredient {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  category       String   @default("Uncategorized")
+  unit           String
+  quantityOnHand Decimal  @default(0)
+  totalCost      Decimal  @default(0)
+  pricePerLb     Decimal  @default(0)
+  percentAdded   Decimal  @default(0)
+  markupPercent  Decimal  @default(0)
+  chargePerPound Decimal  @default(0)
+  defaultCost    Decimal
+  createdAt      DateTime @default(now())
+  recipeItems    RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id            String     @id @default(cuid())
+  recipeId       String
+  ingredientId   String
+  quantity       Decimal
+  recipe         Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, ingredientId])
+}
+
+model RecipeBundleItem {
+  id            String   @id @default(cuid())
+  recipeId      String
+  childRecipeId String
+  quantity      Decimal
+  recipe        Recipe   @relation("ParentRecipeItems", fields: [recipeId], references: [id], onDelete: Cascade)
+  childRecipe   Recipe   @relation("ChildRecipeItems", fields: [childRecipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, childRecipeId])
+}
+
+model InventoryLot {
+  id            String   @id @default(cuid())
+  ingredient    String
+  quantityLbs   Decimal
+  unitCost      Decimal
+  receivedAt    DateTime
+  createdAt     DateTime @default(now())
+}
+
+model PromoCode {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  label           String
+  kind            PromoKind
+  active          Boolean   @default(true)
+  /** COUPON: percent off pre-tax merchandise (0–100). */
+  discountPercent Decimal?
+  /** COUPON: fixed dollars off pre-tax merchandise (applied after percent if both set). */
+  discountFixed   Decimal?
+  /** COOP: percent of pre-tax merchandise owed as kickback. */
+  kickbackPercent Decimal?
+  /** COOP: flat dollars owed per order (added after percent). */
+  kickbackFixed   Decimal?
+  payeeNotes      String?
+  createdAt       DateTime  @default(now())
+  orders          Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  externalId    String?     @unique
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  recipeId      String?
+  recipe        Recipe?     @relation(fields: [recipeId], references: [id])
+  promoCodeId   String?
+  promoCode     PromoCode?  @relation(fields: [promoCodeId], references: [id])
+  /** As entered by customer (any casing). */
+  promoCodeEntered String?
+  /** Pre-tax merchandise total before coupon (pricing snapshot). */
+  preTaxNet           Decimal?
+  /** Pre-tax dollar discount from COUPON codes (NJ tax applies after this). */
+  promoDiscountPreTax Decimal   @default(0)
+  /** Dollars owed to Co-op for this order (internal). */
+  coOpKickbackOwed    Decimal   @default(0)
+  status        OrderStatus @default(NEW)
+  quantityLbs   Decimal     @default(0)
+  paymentStatus String      @default("UNPAID")
+  paymentMethod String?
+  paidAt        DateTime?
+  pickedUpAt    DateTime?
+  /** Customer total including NJ sales tax (after any coupon). */
+  subtotal      Decimal
+  cogs          Decimal?
+  margin        Decimal?
+  productSummary String?
+  orderItemsJson String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  invoice       Invoice?
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  vendor      String
+  category    String
+  amount      Decimal
+  expenseDate DateTime
+  receiptPath String?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model Invoice {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  order          Order     @relation(fields: [orderId], references: [id])
+  invoiceNumber  String    @unique
+  amount         Decimal
+  pdfPath        String?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+  payment        Payment?
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  invoiceId  String   @unique
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  amount     Decimal
+  paidAt     DateTime?
+  status     String
+  createdAt  DateTime @default(now())
+}

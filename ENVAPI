@@ -1,0 +1,159 @@
+# Management Hub — environment & URL reference
+
+**Fastest for Render:** copy all lines from repo root **`render.env`** (no `#` comments — safe bulk paste). Replace `YOUR_APPS_SCRIPT_API_KEY_FROM_SCRIPT_PROPERTIES` and `PUBLIC_API_BASE_URL` / `CORS_ORIGINS` if your Render URL is not `hub-api.onrender.com`. Rotate `JWT_SECRET` after first deploy if you want your own secret.
+
+Other templates:
+
+- API local: `apps/api/.env` ← `apps/api/.env.example`
+- Web local: `apps/web/.env.local` ← `apps/web/.env.local.example`
+
+**Do not commit real secrets.** Placeholders in `render.env` are safe to commit.
+
+---
+
+## 1. URLs (grouped)
+
+Use **HTTPS** in production. **No trailing slash** on API base URLs unless noted.
+
+| Purpose | Variable(s) | Example / pattern |
+|--------|-------------|-------------------|
+| Public API (browser + sheet links) | `PUBLIC_API_BASE_URL` | `https://your-service.onrender.com` |
+| Apps Script — main controller (`pull`, actions) | `GOOGLE_SHEET_APPS_SCRIPT_URL` | `https://script.google.com/macros/s/…/exec` |
+| Apps Script — login / `sessionPing` (optional) | `GOOGLE_SHEET_LOGIN_APPS_SCRIPT_URL` | Same as above or a second deployment |
+| Web → API (split hosting) | `NEXT_PUBLIC_API_URL` | `https://your-service.onrender.com` or empty for same-origin |
+| Web → Apps Script (browser session checks) | `NEXT_PUBLIC_JR_SHEET_APPS_SCRIPT_URL` | Same `/exec` as API sheet URL |
+| Workers calendar (optional) | `NEXT_PUBLIC_JR_WORKERS_CALENDAR_APPS_SCRIPT_URL` | `https://script.google.com/macros/s/…/exec` |
+| R2 / public files | `STORAGE_PUBLIC_BASE_URL` | `https://files.yourdomain.com` or R2 public URL |
+| Square checkout (invoice PDFs) | `INVOICE_SQUARE_CHECKOUT_URL` | `https://checkout.square.site/merchant/…` |
+
+**Google Sheet (not an env var):** open your spreadsheet; the ID is the long string in:
+
+`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`
+
+Set `JR_SPREADSHEET_ID` in **Apps Script → Project settings → Script properties** (not in Nest `.env`).
+
+---
+
+## 2. API (`apps/api`) — Nest / Prisma
+
+### 2.1 Core
+
+| Key | Required | Notes |
+|-----|----------|--------|
+| `NODE_ENV` | Production | `production` on Render |
+| `PORT` | Optional | Default `4000`; Render sets automatically |
+| `JWT_SECRET` | **Yes** (when auth enforced) | ≥ 32 random characters |
+| `JWT_EXPIRES_IN` | Optional | e.g. `8h`, `12h`, `7d` |
+| `DATABASE_URL` | Optional | Omit → embedded SQLite `apps/api/data/hub.db` |
+
+### 2.2 Single-site + Google Sheet (recommended)
+
+| Key | Required | Notes |
+|-----|----------|--------|
+| `HUB_SHEET_ONLY` | Recommended | `true` — Sheet login only; no DB user for JWT |
+| `GOOGLE_SHEET_APPS_SCRIPT_URL` | **Yes** | Apps Script Web App `/exec` |
+| `GOOGLE_SHEET_API_KEY` **or** `GOOGLE_SHEET_SITE_KEY` | **Yes** | Matches Script `API_KEY` or sheet `SITE_KEY` |
+| `GOOGLE_SHEET_LOGIN_APPS_SCRIPT_URL` | Optional | Defaults to main URL |
+| `SHEET_HUB_JWT_EMAIL` | Optional | Identity in JWT (e.g. owner email) |
+| `SHEET_HUB_JWT_SUB` | Optional | Default `hub-sheet-owner` |
+| `SHEET_HUB_JWT_ROLE` | Optional | `OWNER` or `MANAGER` |
+
+### 2.3 HTTP / CORS / links
+
+| Key | Notes |
+|-----|--------|
+| `PUBLIC_API_BASE_URL` | Public API origin for receipt URLs written to Sheets |
+| `CORS_ORIGINS` | Comma-separated allowed browser origins |
+
+### 2.4 Auth toggles
+
+| Key | Notes |
+|-----|--------|
+| `OWNER_SETUP_SECRET` | Header `X-Setup-Secret` for `POST /auth/seed-owner` in production |
+| `REQUIRE_API_AUTH` | `true` to require JWT outside production |
+| `API_AUTH_DISABLED` | `true` **local only** — never on public internet |
+
+### 2.5 Integrations
+
+| Key | Header / usage |
+|-----|----------------|
+| `INTEGRATION_WEBHOOK_SECRET` | `X-Webhook-Secret` |
+| `FINAL_ORDER_SUBMIT_SECRET` | `X-Final-Order-Secret` |
+
+### 2.6 Storage (Cloudflare R2)
+
+| Key | Notes |
+|-----|--------|
+| `R2_ACCOUNT_ID` | |
+| `R2_ACCESS_KEY_ID` | |
+| `R2_SECRET_ACCESS_KEY` | |
+| `R2_BUCKET` | |
+| `STORAGE_PUBLIC_BASE_URL` | Public base for objects (see §1 URLs) |
+| `STRICT_NO_LOCAL_STORAGE` | `true` when R2 is set and local disk must be off |
+
+### 2.7 Invoices & branding (local disk path when R2 off)
+
+| Key | Notes |
+|-----|--------|
+| `INVOICES_STORAGE_DIR` | Absolute path to `Invoices/` |
+| `INVOICE_LOGO_PATH` | Logo file for PDFs |
+| `INVOICE_SQUARE_CHECKOUT_URL` | See §1 URLs |
+| `INVOICE_CREDIT_CARD_FEE_RATE` | e.g. `0.033` |
+| `INVOICE_ZELLE_EMAIL` | |
+| `INVOICE_VENMO_HANDLE` | |
+| `INVOICE_FORCE_FULL_SYNC_ON_START` | Sync PDFs on every start (usually off) |
+
+### 2.8 Calendar / misc
+
+| Key | Notes |
+|-----|--------|
+| `WORKERS_CALENDAR_PATH` | Folder or `.ics` file for Workers feed |
+| `GOOGLE_CALENDAR_ID` | If Google module enabled |
+| `GMAIL_SENDER_EMAIL` | If Gmail features enabled |
+
+### 2.9 Deploy / recovery (Render)
+
+| Key | Notes |
+|-----|--------|
+| `PRISMA_RESET_PUBLIC_ON_P3009` | `true` **once** to recover failed migration, then remove |
+
+---
+
+## 3. Web (`apps/web`) — `NEXT_PUBLIC_*`
+
+| Key | Notes |
+|-----|--------|
+| `NEXT_PUBLIC_API_URL` | Empty = same origin; else full API base URL |
+| `NEXT_PUBLIC_JR_SHEET_APPS_SCRIPT_URL` | Browser `/exec` URL (align with API) |
+| `NEXT_PUBLIC_JR_WORKERS_CALENDAR_APPS_SCRIPT_URL` | Optional calendar script |
+| `NEXT_PUBLIC_SHEET_WEB_LOGIN` | `0` / `false` to prefer API login only |
+| `NEXT_PUBLIC_SKIP_HUB_LOGIN` | Dev only — skip login gate |
+
+---
+
+## 4. Google Apps Script (not in `.env`)
+
+Set in **Apps Script → Project settings → Script properties**:
+
+| Property | Purpose |
+|----------|---------|
+| `API_KEY` | Must match `GOOGLE_SHEET_API_KEY` (if using API key auth) |
+| `JR_SPREADSHEET_ID` | Bound sheet ID |
+| `RECEIPTS_FOLDER_ID` | Optional override; default folder ID in `Code.gs` if unset |
+| `INVOICES_FOLDER_ID` | If used by script |
+
+Sheet **Config** tab may include `SITE_KEY` → matches `GOOGLE_SHEET_SITE_KEY` when using site-key auth.
+
+---
+
+## 5. Where to paste (checklist)
+
+| Platform | What to set |
+|----------|-------------|
+| **Render Web Service** | §2 API vars + §1 URLs used by API |
+| **Cloudflare Pages** (split UI) | §3 Web vars + `NEXT_PUBLIC_API_URL` → your Render API |
+| **Local** | `apps/api/.env` + `apps/web/.env.local` |
+
+---
+
+*Last aligned with repo `apps/api/.env.example` and `apps/web/.env.local.example`.*

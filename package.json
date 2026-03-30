@@ -1,0 +1,41 @@
+{
+  "name": "management-control-hub",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev:api": "npm run start:dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "start:local": "concurrently -n api,web --no-color \"npm run dev:api\" \"npm run dev:web\"",
+    "start:hub": "npm run build:web && npm run start:dev -w apps/api",
+    "dev": "powershell -Command \"Start-Process npm -ArgumentList 'run dev:api'; npm run dev:web\"",
+    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
+    "build:web": "npm run build -w packages/shared && npm run build -w apps/web",
+    "deploy:cf-pages": "sh -c 'if [ -z \"$PAGES_PROJECT_NAME\" ]; then echo \"Set PAGES_PROJECT_NAME in Cloudflare (your Pages project name, same as *.pages.dev slug).\"; exit 1; fi; exec npx wrangler pages deploy apps/web/out --project-name=\"$PAGES_PROJECT_NAME\"'",
+    "start": "npm run start:local",
+    "ensure:data": "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run prisma:seed -w apps/api && npm run prisma:import:recipes -w apps/api",
+    "render:start": "node scripts/render-start.cjs",
+    "import:check": "node scripts/import-check-to-postgres.js",
+    "sync:sheet:initial": "node scripts/sync-initial-to-sheet.js",
+    "sync:sheet:products": "node scripts/sync-products-ingredients-to-sheet.js",
+    "import:jr-recipes:sheet": "node scripts/import-jr-recipes-to-sheet.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "overrides": {
+    "ajv": "8.18.0",
+    "effect": "3.21.0"
+  },
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "exceljs": "^4.4.0"
+  }
+}

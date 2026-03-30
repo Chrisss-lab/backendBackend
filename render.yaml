@@ -1,0 +1,22 @@
+# Render Blueprint (optional): Web Service only — no managed Postgres required.
+# Prisma uses embedded SQLite at apps/api/data/hub.db (created on first deploy).
+# Business data for the hub lives in Google Sheet (Apps Script); set GOOGLE_SHEET_* in the dashboard.
+services:
+  - type: web
+    name: hub-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm ci && npm run build -w packages/shared && npm run prisma:generate -w apps/api && npm run build -w apps/api && npm run build:web
+    # Use exactly this (no "&& node ..." after it — see the script for migrate + API).
+    startCommand: npm run render:start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      # Single-site + Google Sheet as system of record (recommended):
+      # HUB_SHEET_ONLY=true
+      # GOOGLE_SHEET_APPS_SCRIPT_URL, GOOGLE_SHEET_API_KEY (or SITE_KEY)
+      # Optional: SHEET_HUB_JWT_EMAIL, PUBLIC_API_BASE_URL, CORS_ORIGINS
+      # R2 (set in dashboard; do not commit secrets):
+      # R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, STORAGE_PUBLIC_BASE_URL

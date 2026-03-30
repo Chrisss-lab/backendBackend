@@ -1,0 +1,46 @@
+# Local scratch / exports (do not commit)
+Backend.xlsx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+node_modules
+.next
+dist
+__pycache__/
+*.pyc
+apps/web/out
+apps/web/.next/
+apps/api/dist/
+**/*.tsbuildinfo
+.env
+.env.local
+*.log
+backend-start.log
+coverage
+apps/api/.env
+apps/api/prisma/dev.db
+apps/api/prisma/dev.backup-*.db
+apps/api/data/*.db
+!apps/api/data/.gitkeep
+apps/api/prisma/data/*.db
+
+# Optional import spreadsheets (app uses SQLite; scripts read these if present)
+data/import/*
+!data/import/.gitkeep
+apps/web/.env.local
+
+# One-time invoice bootstrap stamp (per machine; safe to delete to re-run full sync on API start)
+Invoices/.jr-pending-archive-full-sync.done
+
+# Invoices folder: only commit sample + README (real PDFs/logos stay local, R2, or BackUps)
+Invoices/*
+!Invoices/README.md
+!Invoices/DEMO-sample-invoice.pdf
+
+apps/api/uploads/
+apps/api/_StartResetPublic.sql
